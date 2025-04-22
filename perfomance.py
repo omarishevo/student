@@ -2,9 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import seaborn as sns
-from collections import Counter
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
-import math
 import altair as alt
 
 # --- Helper Functions ---
@@ -115,16 +113,33 @@ except FileNotFoundError:
     st.error("Error: Make sure 'student_habits_performance.csv' is in the same directory as your script.")
     st.stop()
 
+# --- Data Cleaning ---
+# Handle missing values
+df = df.dropna()
+
+# Handle outliers (example: clipping extreme values)
+for col in df.select_dtypes(include=np.number).columns:
+    Q1 = df[col].quantile(0.25)
+    Q3 = df[col].quantile(0.75)
+    IQR = Q3 - Q1
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+    df[col] = np.clip(df[col], lower_bound, upper_bound)
+
 # --- Preprocessing ---
-for col in ['gender', 'part_time_job', 'diet_quality', 'parental_education_level', 'internet_quality', 'extracurricular_participation']:
-    df[col] = LabelEncoder().fit_transform(df[col])
+# Convert gender to numerical (Label Encoding)
+label_encoder = LabelEncoder()
+df['gender'] = label_encoder.fit_transform(df['gender'])
+
+# Convert other categorical features to numerical (One-Hot Encoding)
+df = pd.get_dummies(df, columns=['part_time_job', 'diet_quality', 'parental_education_level', 'internet_quality', 'extracurricular_participation'], drop_first=True)
 
 # Normalize numerical features
 numerical_cols = df.select_dtypes(include=np.number).columns.tolist()
 scaler = MinMaxScaler()
 df[numerical_cols] = scaler.fit_transform(df[numerical_cols])
 
-# Split into features and target
+# Separate features (X) and target (y)
 X = df.drop('exam_score', axis=1).values.T
 y = df['exam_score'].values.reshape(1, -1)
 
@@ -184,34 +199,76 @@ st.title('Student Performance Prediction')
 # --- Sidebar ---
 st.sidebar.header('Input Features')
 
-age = st.sidebar.slider('Age', 17, 25, 20)
-gender = st.sidebar.radio('Gender', [0, 1], index=0, format_func=lambda x: "Female" if x == 0 else "Male")
-study_hours = st.sidebar.slider('Study Hours per Day', 0.0, 8.0, 4.0)
-social_media = st.sidebar.slider('Social Media Hours', 0.0, 8.0, 2.0)
-netflix = st.sidebar.slider('Netflix Hours', 0.0, 8.0, 1.0)
-part_time = st.sidebar.radio('Part-time Job', [0, 1], index=0, format_func=lambda x: "No" if x == 0 else "Yes")
-attendance = st.sidebar.slider('Attendance Percentage', 0, 100, 80)
-sleep = st.sidebar.slider('Sleep Hours', 0.0, 10.0, 7.0)
-diet = st.sidebar.radio('Diet Quality', [0, 1, 2], index=1, format_func=lambda x: "Fair" if x == 0 else ("Good" if x == 1 else "Poor"))
-exercise = st.sidebar.slider('Exercise Frequency', 0, 7, 3)
-parental_education = st.sidebar.radio('Parental Education Level', [0, 1, 2, 3], index=1, format_func=lambda x: "High School" if x == 0 else ("None" if x == 1 else ("Bachelor" if x == 2 else "Master")))
-internet = st.sidebar.radio('Internet Quality', [0, 1, 2], index=1, format_func=lambda x: "Average" if x == 0 else ("Good" if x == 1 else "Poor"))
-mental_health = st.sidebar.slider('Mental Health Rating', 1, 10, 5)
-extra_curricular = st.sidebar.radio('Extracurricular Participation', [0, 1], index=0, format_func=lambda x: "No" if x == 0 else "Yes")
+# Create input widgets for each feature
+input_dict = {}
+input_dict['age'] = st.sidebar.slider('Age', 17, 25, 20)
+input_dict['gender'] = st.sidebar.radio('Gender', ['Female', 'Male'], index=0)
+input_dict['study_hours_per_day'] = st.sidebar.slider('Study Hours per Day', 0.0, 8.0, 4.0)
+input_dict['social_media_hours'] = st.sidebar.slider('Social Media Hours', 0.0, 8.0, 2.0)
+input_dict['netflix_hours'] = st.sidebar.slider('Netflix Hours', 0.0, 8.0, 1.0)
+input_dict['part_time_job_Yes'] = st.sidebar.radio('Part-time Job', [0, 1], index=0, format_func=lambda x: "No" if x == 0 else "Yes")
+input_dict['attendance_percentage'] = st.sidebar.slider('Attendance Percentage', 0, 100, 80)
+input_dict['sleep_hours'] = st.sidebar.slider('Sleep Hours', 0.0, 10.0, 7.0)
+input_dict['diet_quality_Good'] = st.sidebar.radio('Diet Quality', [0, 1], index=0, format_func=lambda x: "Fair/Poor" if x == 0 else "Good")
+input_dict['exercise_frequency'] = st.sidebar.slider('Exercise Frequency', 0, 7, 3)
+input_dict['parental_education_level_High School'] = st.sidebar.radio('Parental Education Level', [0, 1], index=0, format_func=lambda x: "None/Other" if x == 0 else "High School")
+input_dict['internet_quality_Good'] = st.sidebar.radio('Internet Quality', [0, 1], index=0, format_func=lambda x: "Average/Poor" if x == 0 else "Good")
+input_dict['mental_health_rating'] = st.sidebar.slider('Mental Health Rating', 1, 10, 5)
+input_dict['extracurricular_participation_Yes'] = st.sidebar.radio('Extracurricular Participation', [0, 1], index=0, format_func=lambda x: "No" if x == 0 else "Yes")
 
 # --- Prediction ---
-input_data = pd.DataFrame({
-    'age': [age],
-    'gender': [gender],
-    'study_hours_per_day': [study_hours],
-    'social_media_hours': [social_media],
-    'netflix_hours': [netflix],
-    'part_time_job': [part_time],
-    'attendance_percentage': [attendance],
-    'sleep_hours': [sleep],
-    'diet_quality': [diet],
-    'exercise_frequency': [exercise],
-    'parental_education_level': [parental_education],
-    'internet_quality': [internet],
-    'mental_health_rating': [mental_health],
-    'ext
+# Create a DataFrame from the input values
+input_data = pd.DataFrame([input_dict])
+
+# Encode 'gender'
+input_data['gender'] = label_encoder.transform(input_data['gender'])
+
+# Scale the input data
+input_scaled = scaler.transform(input_data)
+input_scaled = input_scaled.T
+
+# Make Prediction
+AL, caches = L_model_forward(input_scaled, parameters)
+
+# Display the prediction
+st.subheader('Prediction')
+st.markdown(f'<p class="big-font">Predicted Exam Score: {AL[0][0]:.2f}</p>', unsafe_allow_html=True)
+
+# --- Visualizations ---
+st.subheader('Visualizations')
+
+# Correlation Heatmap using Altair
+st.write("Correlation Heatmap:")
+corr = df.corr()
+corr = corr.stack().reset_index(name="correlation")
+
+heatmap = alt.Chart(corr).mark_rect().encode(
+    x=alt.X('level_0:O', title='Variable 1'),
+    y=alt.Y('level_1:O', title='Variable 2'),
+    color=alt.Color('correlation:Q', scale=alt.Scale(scheme='viridis'))
+).properties(
+    width=600,
+    height=400,
+    title='Correlation Heatmap'
+)
+st.altair_chart(heatmap, use_container_width=True)
+
+# Feature Importance using Altair
+st.write("Feature Importance:")
+try:
+    feature_importance = pd.DataFrame({'Feature': df.drop('exam_score', axis=1).columns, 'Importance': abs(parameters['W1']).mean(axis=0)})
+    feature_importance = feature_importance.sort_values('Importance', ascending=False)
+
+    barplot = alt.Chart(feature_importance).mark_bar().encode(
+        x=alt.X('Feature:O', title='Feature'),
+        y=alt.Y('Importance:Q', title='Importance'),
+        tooltip=['Feature', 'Importance']
+    ).properties(
+        width=600,
+        height=400,
+        title='Feature Importance'
+    )
+    st.altair_chart(barplot, use_container_width=True)
+
+except Exception as e:
+        st.error(f"Error generating feature importance plot: {e}")
