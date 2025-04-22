@@ -148,7 +148,8 @@ for i in range(0, num_iterations):
 print("Training complete!")
 
 # --- Streamlit App ---
-st.markdown("""
+st.markdown(
+    """
     <style>
     .big-font {
         font-size:24px !important;
@@ -171,3 +172,71 @@ st.markdown("""
         background-color: #FF4B4B;
     }
     .stRadio>div>label {
+        color: #333333;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+st.title('Student Performance Prediction')
+
+# --- Sidebar ---
+st.sidebar.header('Input Features')
+
+age = st.sidebar.slider('Age', 17, 25, 20)
+gender = st.sidebar.radio('Gender', [0, 1], index=0, format_func=lambda x: "Female" if x == 0 else "Male")
+study_hours = st.sidebar.slider('Study Hours per Day', 0.0, 8.0, 4.0)
+social_media = st.sidebar.slider('Social Media Hours', 0.0, 8.0, 2.0)
+netflix = st.sidebar.slider('Netflix Hours', 0.0, 8.0, 1.0)
+part_time = st.sidebar.radio('Part-time Job', [0, 1], index=0, format_func=lambda x: "No" if x == 0 else "Yes")
+attendance = st.sidebar.slider('Attendance Percentage', 0, 100, 80)
+sleep = st.sidebar.slider('Sleep Hours', 0.0, 10.0, 7.0)
+diet = st.sidebar.radio('Diet Quality', [0, 1, 2], index=1, format_func=lambda x: "Fair" if x == 0 else ("Good" if x == 1 else "Poor"))
+exercise = st.sidebar.slider('Exercise Frequency', 0, 7, 3)
+parental_education = st.sidebar.radio('Parental Education Level', [0, 1, 2, 3], index=1, format_func=lambda x: "High School" if x == 0 else ("None" if x == 1 else ("Bachelor" if x == 2 else "Master")))
+internet = st.sidebar.radio('Internet Quality', [0, 1, 2], index=1, format_func=lambda x: "Average" if x == 0 else ("Good" if x == 1 else "Poor"))
+mental_health = st.sidebar.slider('Mental Health Rating', 1, 10, 5)
+extra_curricular = st.sidebar.radio('Extracurricular Participation', [0, 1], index=0, format_func=lambda x: "No" if x == 0 else "Yes")
+
+# --- Prediction ---
+input_data = pd.DataFrame({
+    'age': [age],
+    'gender': [gender],
+    'study_hours_per_day': [study_hours],
+    'social_media_hours': [social_media],
+    'netflix_hours': [netflix],
+    'part_time_job': [part_time],
+    'attendance_percentage': [attendance],
+    'sleep_hours': [sleep],
+    'diet_quality': [diet],
+    'exercise_frequency': [exercise],
+    'parental_education_level': [parental_education],
+    'internet_quality': [internet],
+    'mental_health_rating': [mental_health],
+    'extracurricular_participation': [extra_curricular]
+})
+
+# Encode and Normalize input
+for col in ['gender', 'part_time_job', 'diet_quality', 'parental_education_level', 'internet_quality', 'extracurricular_participation']:
+    input_data[col] = LabelEncoder().fit_transform(input_data[col])
+
+input_scaled = scaler.transform(input_data)
+input_scaled = input_scaled.T # Transpose for the NN
+
+# Make Prediction
+AL, caches = L_model_forward(input_scaled, parameters)
+
+# Display the prediction
+st.subheader('Prediction')
+st.markdown(f'<p class="big-font">Predicted Exam Score: {AL[0][0]:.2f}</p>', unsafe_allow_html=True)
+
+# --- Visualizations ---
+st.subheader('Visualizations')
+
+# Correlation Heatmap
+st.write("Correlation Heatmap:")
+fig_corr, ax_corr = plt.subplots(figsize=(12, 8))
+corr = df.corr()
+sns.heatmap(corr, annot=True, fmt=".2f", cmap='viridis', ax=ax_corr)
+st.pyplot(fig_corr)
