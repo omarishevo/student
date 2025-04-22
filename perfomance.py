@@ -6,7 +6,7 @@ from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Load data
+# --- Load Data ---
 try:
     df = pd.read_csv('student_habits_performance.csv')
     df = df.drop('student_id', axis=1)
@@ -14,7 +14,7 @@ except FileNotFoundError:
     st.error("Error: Make sure 'student_habits_performance.csv' is in the same directory as your script.")
     st.stop()
 
-# Data Preprocessing
+# --- Preprocessing ---
 for col in ['gender', 'part_time_job', 'diet_quality', 'parental_education_level', 'internet_quality', 'extracurricular_participation']:
     df[col] = LabelEncoder().fit_transform(df[col])
 
@@ -27,12 +27,11 @@ scaler = MinMaxScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
-# Model Training
+# --- Model Training ---
 model = RandomForestRegressor(n_estimators=100, random_state=42)
 model.fit(X_train_scaled, y_train)
 
 # --- Streamlit App ---
-# Custom CSS for styling
 st.markdown("""
     <style>
     .big-font {
@@ -63,7 +62,7 @@ st.markdown("""
 
 st.title('Student Performance Prediction')
 
-# Sidebar for input features
+# --- Sidebar ---
 st.sidebar.header('Input Features')
 
 age = st.sidebar.slider('Age', 17, 25, 20)
@@ -81,7 +80,7 @@ internet = st.sidebar.radio('Internet Quality', [0, 1, 2], index=1, format_func=
 mental_health = st.sidebar.slider('Mental Health Rating', 1, 10, 5)
 extra_curricular = st.sidebar.radio('Extracurricular Participation', [0, 1], index=0, format_func=lambda x: "No" if x == 0 else "Yes")
 
-# Prepare input data
+# --- Prediction ---
 input_data = pd.DataFrame({
     'age': [age],
     'gender': [gender],
@@ -99,13 +98,10 @@ input_data = pd.DataFrame({
     'extracurricular_participation': [extra_curricular]
 })
 
-# Scale the input data
 input_scaled = scaler.transform(input_data)
-
-# Prediction
 prediction = model.predict(input_scaled)[0]
 
-# Display the prediction
+# --- Display Prediction ---
 st.subheader('Prediction')
 st.markdown(f'<p class="big-font">Predicted Exam Score: {prediction:.2f}</p>', unsafe_allow_html=True)
 
@@ -123,15 +119,14 @@ st.pyplot(fig_corr)
 st.write("Feature Importance:")
 feat_importance = pd.Series(model.feature_importances_, index=X.columns).sort_values(ascending=False)
 fig_importance, ax_importance = plt.subplots(figsize=(10, 6))
-feat_importance.plot(kind='bar', ax=ax_importance, color="#FF4B4B")  # Use a more visually appealing color
+feat_importance.plot(kind='bar', ax=ax_importance, color="#FF4B4B")
 ax_importance.set_title('Feature Importance')
 ax_importance.set_ylabel('Importance')
 st.pyplot(fig_importance)
 
-# Scatter Plot: Study Hours vs Exam Score
+# Study Hours vs Exam Score
 st.write("Study Hours vs Exam Score:")
 fig_scatter, ax_scatter = plt.subplots(figsize=(10, 6))
-sns.scatterplot(data=df, x='study_hours_per_day', y='exam_score', ax=ax_scatter, color="#2E9AFE")  # Use a more visually appealing color
+sns.scatterplot(data=df, x='study_hours_per_day', y='exam_score', ax=ax_scatter, color="#2E9AFE")
 ax_scatter.set_title('Study Hours vs Exam Score')
 st.pyplot(fig_scatter)
-
