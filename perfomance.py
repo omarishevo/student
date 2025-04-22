@@ -1,11 +1,11 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 import seaborn as sns
 from collections import Counter
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 import math
+import altair as alt
 
 # --- Helper Functions ---
 def sigmoid(x):
@@ -214,29 +214,4 @@ input_data = pd.DataFrame({
     'parental_education_level': [parental_education],
     'internet_quality': [internet],
     'mental_health_rating': [mental_health],
-    'extracurricular_participation': [extra_curricular]
-})
-
-# Encode and Normalize input
-for col in ['gender', 'part_time_job', 'diet_quality', 'parental_education_level', 'internet_quality', 'extracurricular_participation']:
-    input_data[col] = LabelEncoder().fit_transform(input_data[col])
-
-input_scaled = scaler.transform(input_data)
-input_scaled = input_scaled.T # Transpose for the NN
-
-# Make Prediction
-AL, caches = L_model_forward(input_scaled, parameters)
-
-# Display the prediction
-st.subheader('Prediction')
-st.markdown(f'<p class="big-font">Predicted Exam Score: {AL[0][0]:.2f}</p>', unsafe_allow_html=True)
-
-# --- Visualizations ---
-st.subheader('Visualizations')
-
-# Correlation Heatmap
-st.write("Correlation Heatmap:")
-fig_corr, ax_corr = plt.subplots(figsize=(12, 8))
-corr = df.corr()
-sns.heatmap(corr, annot=True, fmt=".2f", cmap='viridis', ax=ax_corr)
-st.pyplot(fig_corr)
+    'ext
