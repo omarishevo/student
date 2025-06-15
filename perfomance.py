@@ -7,13 +7,13 @@ st.set_page_config(page_title="Student Performance Analysis", layout="wide")
 # Title
 st.title("📚 Student Performance Data Explorer")
 
-# Upload the Excel file
-uploaded_file = st.file_uploader("Upload your Student Performance Excel file", type=["xlsx"])
+# Upload the CSV file
+uploaded_file = st.file_uploader("Upload your Student Performance CSV file", type=["csv"])
 
 if uploaded_file:
     try:
-        # Read the Excel file
-        df = pd.read_excel(uploaded_file, engine='openpyxl')  # Required in some cases
+        # Read CSV instead of Excel
+        df = pd.read_csv(uploaded_file)
 
         # Preview the data
         st.subheader("🔍 Preview of Dataset")
@@ -42,7 +42,7 @@ if uploaded_file:
     except Exception as e:
         st.error(f"❌ An error occurred while processing the file: {e}")
 else:
-    st.warning("📤 Please upload a student performance Excel file to begin.")
+    st.warning("📤 Please upload a student performance CSV file to begin.")
 
 # Footer
 st.markdown("---")
