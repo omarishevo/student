@@ -91,7 +91,7 @@ with st.sidebar:
 if uploaded is None:
     st.markdown("""
     <div class="main-header">
-        <h1>🎓 Student Performance Predictor</h1>
+        <h1>🎓 Student Performance</h1>
         <p>Explore data insights and predict student scores using machine learning</p>
     </div>
     """, unsafe_allow_html=True)
@@ -107,7 +107,7 @@ except Exception as e:
 # ── Header ─────────────────────────────────────────────────────────────────────
 st.markdown("""
 <div class="main-header">
-    <h1>🎓 Student Performance Predictor</h1>
+    <h1>🎓 Student Performance</h1>
     <p>Explore data insights and predict student scores using machine learning</p>
 </div>
 """, unsafe_allow_html=True)
