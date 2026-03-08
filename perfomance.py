@@ -13,7 +13,7 @@ warnings.filterwarnings("ignore")
 
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Student Performance",
+    page_title="Student Performance Predictor",
     page_icon="🎓",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -50,8 +50,9 @@ st.markdown("""
 
 # ── Load & cache data ──────────────────────────────────────────────────────────
 @st.cache_data
-def load_data():
-    df = pd.read_csv("StudentsPerformance.csv")
+def process_data(raw_bytes):
+    import io
+    df = pd.read_csv(io.BytesIO(raw_bytes))
     df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_").str.replace("/", "_")
     df["average_score"] = df[["math_score", "reading_score", "writing_score"]].mean(axis=1).round(2)
     df["pass_fail"] = (df["average_score"] >= 60).map({True: "Pass", False: "Fail"})
@@ -75,7 +76,7 @@ with st.sidebar:
     st.title("🎓 Controls")
     st.markdown("---")
 
-    uploaded = st.file_uploader("📂 Upload your CSV", type=["csv"])
+    uploaded = st.file_uploader("📂 Upload CSV to begin", type=["csv"])
     st.markdown("---")
 
     st.subheader("🔧 Model Settings")
@@ -87,12 +88,18 @@ with st.sidebar:
     st.caption("v1.0 · Student Performance ML App")
 
 # ── Load data ──────────────────────────────────────────────────────────────────
+if uploaded is None:
+    st.markdown("""
+    <div class="main-header">
+        <h1>🎓 Student Performance Predictor</h1>
+        <p>Explore data insights and predict student scores using machine learning</p>
+    </div>
+    """, unsafe_allow_html=True)
+    st.info("👈 Please upload your **StudentsPerformance.csv** file in the sidebar to get started.")
+    st.stop()
+
 try:
-    df = pd.read_csv(uploaded) if uploaded else load_data()
-    if uploaded:
-        df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_").str.replace("/", "_")
-        df["average_score"] = df[["math_score", "reading_score", "writing_score"]].mean(axis=1).round(2)
-        df["pass_fail"] = (df["average_score"] >= 60).map({True: "Pass", False: "Fail"})
+    df = process_data(uploaded.getvalue())
 except Exception as e:
     st.error(f"Error loading data: {e}")
     st.stop()
